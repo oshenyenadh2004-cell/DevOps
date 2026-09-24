@@ -1,0 +1,9 @@
+rules:
+  - id: detect-nosql-injection-where
+    message: "Potential NoSQL injection: user-controlled input is used inside a MongoDB $where expression."
+    severity: ERROR
+    languages:
+      - javascript
+    patterns:
+      - pattern: |
+          $OBJ.find({$where: `...${$INPUT}...`})
