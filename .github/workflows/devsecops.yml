@@ -24,3 +24,15 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t nodegoat:ci .
+
+        
+  sast-semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config auto --error --severity ERROR .
