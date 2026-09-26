@@ -29,3 +29,5 @@ test/e2e/videos/
 
 # ignore Snyk Code scanner files
 .dccache
+artifacts/cert/server.key
+artifacts/cert/server.crt
