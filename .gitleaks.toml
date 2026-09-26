@@ -1,0 +1,7 @@
+[allowlist]
+description = "Known findings from initial NodeGoat import, since remediated"
+fingerprints = [
+  "d1f8e09cfe09faeb44383fb16af5dced556d07d:artifacts/cert/server.key:private-key:1",
+  "d1f8e09cfe09faeb44383fb16af5dced556d07d:config/env/development.js:generic-api-key:6",
+  "d1f8e09cfe09faeb44383fb16af5dced556d07d:config/env/test.js:generic-api-key:6"
+]
