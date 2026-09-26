@@ -74,8 +74,17 @@ const AllocationsDAO = function(db){
                 }
                 throw `The user supplied threshold: ${parsedThreshold} was not valid.`;
                 */
+                const parsedThreshold = parseInt(threshold, 10);
+
+                if (isNaN(parsedThreshold) || parsedThreshold < 0 || parsedThreshold > 99) {
+                    throw new Error("Invalid threshold");
+                }
+
                 return {
-                    $where: `this.userId == ${parsedUserId} && this.stocks > '${threshold}'`
+                    userId: parsedUserId,
+                    stocks: {
+                        $gt: parsedThreshold
+                    }
                 };
             }
             return {
