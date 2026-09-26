@@ -10,6 +10,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        
+      - name: Generate self-signed TLS cert for CI
+        run: |
+          mkdir -p artifacts/cert
+          openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
+            -keyout artifacts/cert/server.key \
+            -out artifacts/cert/server.crt \
+            -subj "/CN=localhost"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
