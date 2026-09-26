@@ -77,5 +77,5 @@ jobs:
           chmod +x gitleaks
 
       - name: Run Gitleaks (full history scan)
-                run: ./gitleaks detect --source . --log-opts="--all" --config .gitleaks.toml --verbose
+        run: ./gitleaks detect --source . --log-opts=--all --config .gitleaks.toml --verbose
               
