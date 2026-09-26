@@ -6,4 +6,6 @@ rules:
       - javascript
     patterns:
       - pattern: |
-          $OBJ.find({$where: `...${$INPUT}...`})
+          {
+            $where: `...${threshold}...`
+          }
