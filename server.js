@@ -95,7 +95,7 @@ MongoClient.connect(db, (err, db) => {
         cookie: {
             httpOnly: true
             // Remember to start an HTTPS server to get this working
-            // secure: true
+             secure: true
         }
         */
 
