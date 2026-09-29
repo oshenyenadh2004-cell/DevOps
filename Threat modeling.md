@@ -18,7 +18,7 @@ flowchart LR
 
     User -- "HTTP requests<br/>(login, allocations, profile)" --> Web
     Web -- "Queries / writes<br/>(internal only, not exposed)" --> DB
-
+```
 
 ## 2. STRIDE Analysis
 
