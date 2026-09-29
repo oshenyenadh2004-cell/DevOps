@@ -1,9 +1,24 @@
 # Threat Model — NodeGoat DevSecOps Project
 
 ## 1. System Overview
-[Reference Akash's architecture diagram: browser, Express app, MongoDB, trust boundaries between them]
+The system runs as a Web App Container (Node.js/Express) and a MongoDB Container, both inside a Docker host on an internal, trusted network. The only boundary exposed to the public internet is the Web App Container on port 4000 — this is where all user input (login, allocations, profile data) enters the system and is the primary attack surface. MongoDB is never exposed directly; it's only reachable from the Web App Container over the internal Docker network, so any threat reaching the database has to pass through the app layer first.
 
-NodeGoat runs as a fairly standard three-tier setup — browser on one end, an Express/Node.js server handling requests in the middle, MongoDB storing everything at the back. The main trust boundary that matters here is where user input first hits the server, since nothing coming from the browser can really be trusted. There's a second boundary between the app and the database, which matters because a lot of NodeGoat's known issues come from queries being built directly from user input without checking it first.
+```mermaid
+flowchart LR
+    subgraph Internet["Public Internet (untrusted)"]
+        User["Browser / User"]
+    end
+
+    subgraph DockerHost["Docker Host"]
+        subgraph WebNet["Internal Docker Network (trusted)"]
+            Web["Web App Container<br/>Node.js/Express<br/>Port 4000"]
+            DB["MongoDB Container<br/>Port 27017"]
+        end
+    end
+
+    User -- "HTTP requests<br/>(login, allocations, profile)" --> Web
+    Web -- "Queries / writes<br/>(internal only, not exposed)" --> DB
+
 
 ## 2. STRIDE Analysis
 
@@ -31,3 +46,15 @@ NodeGoat runs as a fairly standard three-tier setup — browser on one end, an E
 | T2 | Output should be escaped before being rendered back to users; semgrep can also catch obvious unescaped-output patterns | sast-semgrep gate |
 | T3 | Adding CSRF middleware and checking for it as part of dependency review | dependency-audit gate |
 | T4 | Gitleaks blocks any commit that contains something that looks like a key or credential | secrets-scan gate, config in .gitleaks.toml |
+
+## 5. Industry Trends & Case Study Analysis
+
+One real-world incident that closely relates to this project's DevSecOps practices is the **Log4Shell vulnerability** (CVE-2021-44228), discovered in December 2021. Log4Shell was a critical remote code execution flaw in Log4j, a widely-used Java logging library. Attackers could trigger arbitrary code execution simply by getting a vulnerable application to log a specially crafted string, since Log4j would automatically resolve embedded JNDI lookups. Because Log4j was buried deep inside thousands of applications as a transitive dependency, most organizations didn't even know they were exposed until the vulnerability was public — by then, attackers were already scanning the internet for vulnerable systems.
+
+**Why this is relevant to our project:** Log4Shell exists because a dangerous, exploitable pattern sat undetected in production code and its dependencies for years. This is exactly the class of risk our pipeline is designed to catch early rather than after deployment:
+
+- Our **`dependency-audit`** gate checks for known-vulnerable packages before code reaches production — the same category of check that would have flagged a vulnerable Log4j version had it been part of a Node.js dependency tree equivalent.
+- Our **`sast-semgrep`** gate performs static analysis to catch dangerous code patterns (like our own `eval()` injection and MongoDB `$where` injection issues) before they ship — Log4shell is a reminder that a single unchecked input-handling pattern in a widely-used component can have massive downstream impact.
+- Our **`secrets-scan`** gate (via `.gitleaks.toml`) reduces a different but related risk: even after a vulnerability like Log4Shell is patched, exposed credentials or config could let an attacker exploit the window of compromise further.
+
+The broader industry lesson from Log4Shell is that **shifting security left** — catching issues at the code and dependency level, before deployment — is far cheaper and safer than patching after mass exploitation has already begun. That's the same principle behind every gate in this project's pipeline: `build-and-test`, `sast-semgrep`, `dependency-audit`, `secrets-scan`, and `container-scan` all exist to catch a Log4Shell-style issue during development rather than after attackers find it first.
