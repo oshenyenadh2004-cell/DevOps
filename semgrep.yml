@@ -6,4 +6,14 @@ rules:
       - javascript
     patterns:
       - pattern: |
-          $OBJ.find({$where: `...${$INPUT}...`})
+          {
+            $where: `...${threshold}...`
+          }
+      
+  - id: detect-eval-injection
+    message: "Potential code injection: user-controlled input is passed to eval()."
+    severity: ERROR
+    languages:
+      - javascript
+    patterns:
+      - pattern: eval($INPUT)
