@@ -1,10 +1,12 @@
-FROM node:12-alpine
+FROM node:18-alpine
 ENV WORKDIR /usr/src/app/
 WORKDIR $WORKDIR
 COPY package*.json $WORKDIR
-RUN npm install --production --no-cache
+RUN npm config set strict-ssl false
+RUN npm install --production
 
-FROM node:12-alpine
+FROM node:18-alpine
+RUN npm config set strict-ssl false
 ENV USER node
 ENV WORKDIR /home/$USER/app
 WORKDIR $WORKDIR
