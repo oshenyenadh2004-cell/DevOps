@@ -74,9 +74,9 @@ const AllocationsDAO = function(db){
                 }
                 throw `The user supplied threshold: ${parsedThreshold} was not valid.`;
                 */
-                const parsedThreshold = parseInt(threshold, 10);
+                const parsedThreshold = Number(threshold);
 
-                if (isNaN(parsedThreshold) || parsedThreshold < 0 || parsedThreshold > 99) {
+                if (!Number.isInteger(parsedThreshold) || parsedThreshold < 0 || parsedThreshold > 99) {
                     throw new Error("Invalid threshold");
                 }
 

@@ -1,0 +1,106 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Generate self-signed TLS cert for CI
+        run: |
+          mkdir -p artifacts/cert
+          openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
+            -keyout artifacts/cert/server.key \
+            -out artifacts/cert/server.crt \
+            -subj "/CN=localhost"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 12
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Docker image
+        run: docker build -t nodegoat:ci .
+
+        
+  sast-semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config auto --error --severity ERROR .
+
+        
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16
+
+      - name: Run npm audit
+        continue-on-error: true
+        run: npm audit --audit-level=critical
+        
+
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          chmod +x gitleaks
+
+      - name: Run Gitleaks (full history scan)
+        run: ./gitleaks detect --source . --log-opts=--all --config .gitleaks.toml --verbose
+        
+  container-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate self-signed TLS cert for build
+        run: |
+          mkdir -p artifacts/cert
+          openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
+            -keyout artifacts/cert/server.key \
+            -out artifacts/cert/server.crt \
+            -subj "/CN=localhost"
+
+      - name: Build Docker image
+        run: docker build -t nodegoat:ci .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: nodegoat:ci
+          severity: CRITICAL,HIGH
+          exit-code: 0
+              
